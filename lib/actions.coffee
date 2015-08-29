@@ -25,7 +25,8 @@ class ActionHandler
     funcResult = this[@func.funcName].apply(this, @func.args)
     if funcResult == null
       return
-    doAction(funcResult, @action, @editor, @func.type)
+    backwards = func in ['T', 'F']
+    doAction(funcResult, @action, @editor, @func.type, backwards)
 
   searchAhead: (back, start=@start, lastPos=@lastPos, num=@num) ->
     count = 0
@@ -43,14 +44,14 @@ class ActionHandler
       end = utils.moveBackwards end, lastLength
     return new Range(start, end)
 
-   searchBehind: (back, start=@start,  lastPos=@lastPos, num=@num) ->
-    lastPos = start
+   searchBehind: (back, start=@start, lastPos=@lastPos, num=@num) ->
+    limit = [0, 0]
     count = 0
     end = null
     while count < num
-      result = @scanBackwardsThroughRegex [start, lastPos], @argRegex
+      result = @scanBackwardsThroughRegex [start, limit], @argRegex
       if result == null
-        break
+        return
       end = result.range.start
       lastLength = result.matchText.length
       start = end
@@ -59,7 +60,7 @@ class ActionHandler
       return null
     if back is true
       end = utils.moveForwards end, lastLength
-    new Range(lastPos, end)
+    return new Range(@editor.getCursorBufferPosition(), end)
 
   modifyLine: () ->
     start = @start.toArray()
@@ -210,15 +211,18 @@ FUNCS =
     'args': [true]
 
 
-doAction = (range, action, editor, type) ->
+doAction = (range, action, editor, type, backwards) ->
   if action in ['y', 'c']
-    atom.clipboard.write(range.toString())
+    atom.clipboard.write(editor.getTextInBufferRange(range))
   if action == 'm'
     if type == 'motion'
+      pos = range.end
+      if backwards is true
+        pos = range.start
       if editor.getSelectedText().length == 0
-        editor.setCursorBufferPosition(range.end)
+        editor.setCursorBufferPosition(pos)
       else
-        editor.selectToBufferPosition(range.end)
+        editor.selectToBufferPosition(pos)
   else if action in ['d', 'c']
     editor.setTextInBufferRange range, ''
   else if action == 's'

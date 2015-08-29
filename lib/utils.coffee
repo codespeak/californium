@@ -114,7 +114,6 @@ moveForwards = (startPoint, totalCount) ->
   lastPos = getLastPos(editor)
   [row, col] = startPoint.toArray()
   lineLength = editor.lineTextForBufferRow(row).length
-  console.log(count < totalCount, lastPos.isGreaterThan([row, col]))
   while count < totalCount #and lastPos.isGreaterThan([row, col])
     col++
     if col >= lineLength

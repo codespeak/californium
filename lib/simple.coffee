@@ -17,8 +17,10 @@ doSimple = (input) ->
     func = endOfLine
   else if action == '^'
     func = firstCharacterOfLine
-  else if action == '&'
-    func = beginningOfLine
+  else if action == 'Q'
+    func = top
+  else if action == 'W'
+    func = bottom
   if func != null
     (func(selectDefault) for i in [count..1])
   else
@@ -26,10 +28,12 @@ doSimple = (input) ->
       left(count, selectDefault)
     else if action == 'j'
       down(count, selectDefault)
-    if action == 'k'
+    else if action == 'k'
       up(count, selectDefault)
     else if action == 'l'
       right(count, selectDefault)
+    else if action == '*'
+      goToLine(count, selectDefault)
 
 nextWordStart = (selectDefault) ->
   editor = atom.workspace.getActiveTextEditor()
@@ -73,28 +77,28 @@ backWordEnd = (selectDefault) ->
 
 nextWordEnd = (selectDefault) ->
   editor = atom.workspace.getActiveTextEditor()
-  if editor.getSelectedText().length == 0
+  if editor.getSelectedText().length == 0 and not selectDefault
     editor.moveToEndOfWord()
   else
     editor.selectToEndOfWord()
 
 backWordStart = (selectDefault) ->
   editor = atom.workspace.getActiveTextEditor()
-  if editor.getSelectedText().length == 0
+  if editor.getSelectedText().length == 0 and not selectDefault
     editor.moveToBeginningOfWord()
   else
     editor.selectToBeginningOfWord()
 
 endOfLine = (selectDefault) ->
   editor = atom.workspace.getActiveTextEditor()
-  if editor.getSelectedText().length == 0
+  if editor.getSelectedText().length == 0 and not selectDefault
     editor.moveToEndOfLine()
   else
     editor.selectToEndOfLine()
 
 firstCharacterOfLine = (selectDefault) ->
   editor = atom.workspace.getActiveTextEditor()
-  if editor.getSelectedText().length == 0
+  if editor.getSelectedText().length == 0 and not selectDefault
     editor.moveToFirstCharacterOfLine()
   else
     editor.selectToFirstCharacterOfLine()
@@ -105,6 +109,23 @@ beginningOfLine = (selectDefault) ->
     editor.moveToBeginningOfLine()
   else
     editor.selectToBeginningOfLine()
+
+top  = (selectDefault) ->
+  editor = atom.workspace.getActiveTextEditor()
+  if editor.getSelectedText().length == 0 and not selectDefault
+    editor.setCursorBufferPosition([0, 0])
+  else
+    editor.setSelectedBufferRange([editor.getSelectedBufferRange().end, [0, 0]])
+
+bottom = (selectDefault) ->
+  editor = atom.workspace.getActiveTextEditor()
+  if editor.getSelectedText().length == 0 and not selectDefault
+    editor.setCursorBufferPosition([editor.getLineCount() - 1, 0])
+    editor.moveToEndOfLine()
+  else
+    editor.setSelectedBufferRange([editor.getSelectedBufferRange().start, [editor.getLineCount() - 1, 0]])
+    editor.selectToEndOfLine()
+
 
 left = (count, selectDefault) ->
   editor = atom.workspace.getActiveTextEditor()
@@ -133,6 +154,22 @@ right = (count, selectDefault) ->
     editor.moveRight(count)
   else
     editor.selectRight(count)
+
+goToLine = (lineNum, selectDefault) ->
+  editor = atom.workspace.getActiveTextEditor()
+  if selectDefault == false
+    editor.setCursorBufferPosition([lineNum - 1, 0])
+    editor.moveToFirstCharacterOfLine()
+  else
+    if editor.getSelectedText().length == 0
+      editor.setSelectedBufferRange([editor.getCursorBufferPosition(),
+                                    [lineNum - 1, 0]])
+    else
+      if editor.getCursorBufferPosition().row < lineNum # select to bottom
+        pos = editor.getSelectedBufferRange().start
+      else
+        pos = editor.getSelectedBufferRange().end
+      editor.setSelectedBufferRange([pos, [lineNum - 1, 0]])
 
 module.exports = {
     doSimple
